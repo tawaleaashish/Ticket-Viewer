@@ -26,7 +26,7 @@
       border-radius: 16px;
       box-shadow: 0 8px 20px rgba(0,0,0,0.15);
       text-align: center;
-      width: 80%;
+      width: 30%;
     }
 
     h2 {
@@ -87,7 +87,8 @@
     }
 
     .suggestions div {
-      padding: 10px;
+      font-size: 15px;
+      padding: 8px;
       cursor: pointer;
       border-bottom: 1px solid #eee;
     }
@@ -109,7 +110,7 @@
     }
 
     .dates label {
-      width: 80%;
+      /* width: 80%; */
       cursor: pointer;
       background: #f5f5f5;
       padding: 8px 12px;
@@ -169,7 +170,7 @@
         margin: 20px;
       }
       #nameSearch {
-        font-size: 18px;
+        font-size: 15px;
         padding: 12px 16px;
       }
       .suggestions {
@@ -280,7 +281,7 @@
           btn.textContent = "Open Ticket";
           btn.className = "ticket-link";
           btn.onclick = () => {
-            window.open(match.file, "_self"); // Open in same tab, not download
+                  window.location.href = match.file; 
           };
           ticketBox.appendChild(btn);
         } else {
@@ -290,6 +291,11 @@
     }
 
     radios.forEach(r => r.addEventListener('change', showTicket));
+    window.addEventListener('pageshow', function(event) {
+    if (event.persisted || (window.performance && window.performance.getEntriesByType("navigation")[0].type === "back_forward")) {
+    window.location.reload();
+     }
+    });
   </script>
 </body>
 </html>
