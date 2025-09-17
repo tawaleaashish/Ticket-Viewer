@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Train Ticket Viewer</title>
+
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #e0f7fa, #e1bee7);
+      overflow: hidden; /* prevent bounce scroll on phones */
+    }
+
+    .container {
+      background: #fff;
+      padding: 30px 40px;
+      border-radius: 16px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+      text-align: center;
+      width: 600px;
+      max-width: 95%;
+    }
+
+    h2 {
+      margin-bottom: 25px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .form-group {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      gap: 10px;
+    }
+
+    label {
+      font-weight: 500;
+      font-size: 16px;
+      color: #444;
+    }
+
+    .search-container {
+      position: relative;
+      flex: 1;
+    }
+
+    #nameSearch {
+      width: 100%;
+      padding: 10px 14px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 30px;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    #nameSearch:focus {
+      border-color: #7e57c2;
+      box-shadow: 0 0 5px rgba(126,87,194,0.4);
+    }
+
+    .suggestions {
+      position: absolute;
+      top: 105%;
+      left: 0;
+      right: 0;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      max-height: 200px;
+      overflow-y: auto;
+      background: white;
+      z-index: 1000;
+      display: none;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    .suggestions div {
+      padding: 10px;
+      cursor: pointer;
+      border-bottom: 1px solid #eee;
+    }
+
+    .suggestions div:last-child {
+      border-bottom: none;
+    }
+
+    .suggestions div:hover {
+      background: #f0f0f0;
+    }
+
+    .dates {
+      margin-bottom: 20px;
+      text-align: center;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .dates label {
+      cursor: pointer;
+      background: #f5f5f5;
+      padding: 10px;
+      border-radius: 8px;
+      display: block;
+      transition: background 0.2s;
+    }
+
+    .dates label:hover {
+      background: #e0d7f9;
+    }
+
+    .ticket-box {
+      margin-top: 20px;
+    }
+
+    .ticket-link {
+      display: inline-block;
+      padding: 12px 20px;
+      background: #7e57c2;
+      color: #fff;
+      border-radius: 30px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      text-decoration: none;
+    }
+
+    .ticket-link:hover {
+      background: #5e35b1;
+    }
+
+    .not-found {
+      color: red;
+      font-weight: bold;
+      font-size: 18px;
+    }
+
+    /* Mobile full-screen styles */
+    @media (max-width: 768px) {
+      body {
+        height: 100vh;
+        width: 100vw;
+      }
+      .container {
+        width: 100%;
+        height: 100%;
+        border-radius: 0;
+        box-shadow: none;
+        padding: 20px;
+      }
+      h2 {
+        font-size: 24px;
+      }
+      label, #nameSearch {
+        font-size: 18px;
+      }
+      /* Passenger label + search stacked in phone */
+      .form-group {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .dates {
+        grid-template-columns: 1fr 1fr; /* still 2x2 grid */
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Ticket Viewer</h2>
+
+    <!-- Passenger Search -->
+    <div class="form-group">
+      <label for="nameSearch">Passenger:</label>
+      <div class="search-container">
+        <input type="text" id="nameSearch" placeholder="Type passenger name...">
+        <div class="suggestions" id="suggestions"></div>
+      </div>
+    </div>
+
+    <!-- Journey Dates -->
+    <div class="dates">
+      <label><input type="radio" name="date" value="2025-11-06"> 06-Nov-2025</label>
+      <label><input type="radio" name="date" value="2025-11-08"> 08-Nov-2025</label>
+      <label><input type="radio" name="date" value="2025-11-09"> 09-Nov-2025</label>
+      <label><input type="radio" name="date" value="2025-11-16"> 16-Nov-2025</label>
+    </div>
+
+    <!-- Ticket Display Area -->
+    <div class="ticket-box" id="ticketBox"></div>
+  </div>
+
+  <script>
+    let ticketsData = [];
+    let selectedName = "";
+    const nameSearch = document.getElementById('nameSearch');
+    const suggestionsBox = document.getElementById('suggestions');
+    const ticketBox = document.getElementById('ticketBox');
+    const radios = document.querySelectorAll('input[name="date"]');
+
+    // Fetch tickets.json
+    fetch('tickets.json')
+      .then(res => res.json())
+      .then(data => {
+        ticketsData = data.tickets;
+      })
+      .catch(err => console.error("Error loading tickets.json:", err));
+
+    function updateSuggestions() {
+      const query = nameSearch.value.toLowerCase();
+      suggestionsBox.innerHTML = "";
+
+      // Remove duplicates and sort
+      let uniqueNames = [...new Set(ticketsData.map(t => t.fullname))].sort();
+
+      let matches = uniqueNames;
+      if (query.length > 0) {
+        matches = uniqueNames.filter(name => name.toLowerCase().includes(query));
+      }
+
+      if (matches.length > 0) {
+        matches.forEach(fullname => {
+          const div = document.createElement('div');
+          div.textContent = fullname;
+          div.onclick = () => {
+            nameSearch.value = fullname;
+            const matchedTicket = ticketsData.find(t => t.fullname === fullname);
+            selectedName = matchedTicket?.name || "";
+            suggestionsBox.style.display = "none";
+            showTicket();
+          };
+          suggestionsBox.appendChild(div);
+        });
+        suggestionsBox.style.display = "block";
+      } else {
+        suggestionsBox.style.display = "none";
+      }
+    }
+
+    nameSearch.addEventListener('input', updateSuggestions);
+
+    // Show all names when focusing search bar
+    nameSearch.addEventListener('focus', () => {
+      updateSuggestions();
+    });
+
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', (event) => {
+      if (!event.target.closest('.search-container')) {
+        suggestionsBox.style.display = "none";
+      }
+    });
+
+    function showTicket() {
+      const date = document.querySelector('input[name="date"]:checked')?.value;
+
+      if (selectedName && date) {
+        ticketBox.innerHTML = "";
+        const match = ticketsData.find(t => t.name === selectedName && t.date === date);
+
+        if (match) {
+          ticketBox.innerHTML = `<a href="${match.file}" target="_self" class="ticket-link">Open Ticket</a>`;
+        } else {
+          ticketBox.innerHTML = `<p class="not-found">No ticket available</p>`;
+        }
+      }
+    }
+
+    radios.forEach(r => r.addEventListener('change', showTicket));
+  </script>
+</body>
+</html>
