@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Train Ticket Viewer</title>
 
   <!-- Google Font -->
@@ -52,7 +53,7 @@
     .search-container {
       position: relative;
       flex: 1;
-      min-width: 250px;
+      width: auto;
     }
 
     #nameSearch {
@@ -164,7 +165,7 @@
         font-size: 24px;
       }
       .form-group {
-        width: 90%;
+        width: 80%;
         margin: 20px;
       }
       #nameSearch {
@@ -275,8 +276,13 @@
         const match = ticketsData.find(t => t.fullname === selectedName && t.date === date);
 
         if (match) {
-          // Show "Open Ticket" button that opens in same tab
-          ticketBox.innerHTML = `<a href="${match.file}" target="_self" class="ticket-link">Open Ticket</a>`;
+          const btn = document.createElement('button');
+          btn.textContent = "Open Ticket";
+          btn.className = "ticket-link";
+          btn.onclick = () => {
+            window.open(match.file, "_self"); // Open in same tab, not download
+          };
+          ticketBox.appendChild(btn);
         } else {
           ticketBox.innerHTML = `<p class="not-found">No ticket available</p>`;
         }
